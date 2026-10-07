@@ -2,18 +2,18 @@ name: wxread
 
 concurrency:
   group: ${{ github.workflow }} # 使用工作流名称作为并发组的key
-  cancel-in-progress: true    # 取消任何正在进行的相同并发组的工作流
+  cancel-in-progress: false    # 取消任何正在进行的相同并发组的工作流
 
 on:
   schedule:
-    # Daily at 08:00 Asia/Shanghai (UTC 00:00); GitHub may delay scheduled runs.
-    - cron: '0 0 * * *'
+    # Daily at 00:00 Asia/Shanghai (UTC 16:00 previous day); scheduled runs may be delayed.
+    - cron: '0 16 * * *'
   workflow_dispatch:
     inputs:
       read_num:
-        description: 'Reading requests: 40 = 20 minutes, 360 = 3 hours'
+        description: 'Reading requests: 40 = 20 minutes, 480 = 4 hours'
         required: true
-        default: '360'
+        default: '480'
         type: string
       read_until:
         description: 'Optional UTC Unix timestamp to stop reading'
