@@ -6,6 +6,7 @@ import logging
 import hashlib
 import requests
 import urllib.parse
+import os
 from push import push
 from log_utils import setup_logging
 from config import data, headers, cookies, READ_NUM, PUSH_METHOD, book, chapter
@@ -102,7 +103,11 @@ lastTime = int(time.time()) - 30
 synckey_repair_attempts = 0
 logging.info(f"一共需要阅读 {READ_NUM} 次。")
 
+read_until = float(os.getenv('READ_UNTIL') or 0)
 while index <= READ_NUM:
+    if read_until and time.time() >= read_until:
+        logging.info("已到截止时间，按计划停止阅读。")
+        break
     data.pop('s')
     data['b'] = random.choice(book)
     data['c'] = random.choice(chapter)
@@ -145,7 +150,7 @@ while index <= READ_NUM:
             synckey_repair_attempts = 0
             lastTime = thisTime
             index += 1
-            time.sleep(30)
+            time.sleep(min(30, max(0, read_until - time.time())) if read_until else 30)
             refresh_print(f"阅读进度: 第 {min(index, READ_NUM + 1) - 1}/{READ_NUM} 次，已完成 {(index - 1) * 0.5:.1f} 分钟")
         else:
             synckey_repair_attempts += 1
