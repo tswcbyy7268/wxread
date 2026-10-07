@@ -6,19 +6,20 @@ concurrency:
 
 on:
   schedule:
-    # 凌晨任务：北京时间每天 01:07（UTC 前一天 17:07），避开 GitHub Actions 整点高峰
-    - cron: '7 17 * * *'
-    # 早间任务：北京时间每天 05:00（UTC 前一天 21:00）
-    #- cron: '0 21 * * *'
-    # 午间任务：北京时间每天 11:40（UTC 03:40）
-    #- cron: '40 3 * * *'
-    # 晚间任务：北京时间每天 22:00（UTC 14:00）
-    #- cron: '0 14 * * *'
-  workflow_dispatch:  # 手动触发
+    # Daily at 08:00 Asia/Shanghai (UTC 00:00); GitHub may delay scheduled runs.
+    - cron: '0 0 * * *'
+  workflow_dispatch:
+    inputs:
+      read_num:
+        description: 'Reading requests: 40 = 20 minutes, 360 = 3 hours'
+        required: true
+        default: '360'
+        type: string
 
 jobs:
   deploy:
     runs-on: ubuntu-22.04
+    timeout-minutes: 240
     environment: AutoRead  # 指定环境
 
     steps:
@@ -50,7 +51,7 @@ jobs:
         TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
         TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
         SERVERCHAN_SPT:  ${{ secrets.SERVERCHAN_SPT }}
-        READ_NUM: ${{ vars.READ_NUM }}  # 使用 Repository Variables
+        READ_NUM: ${{ inputs.read_num || vars.READ_NUM }}  # 使用 Repository Variables
 
       run: |
         python main.py
