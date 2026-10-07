@@ -81,6 +81,10 @@ data = {
 }
 
 
+# Personal reading target: fixed 三体 book and matching chapter.
+book = [data['b']]
+chapter = [data['c']]
+
 def convert(curl_command):
     """提取bash接口中的headers与cookies
     支持 -H 'Cookie: xxx' 和 -b 'xxx' 两种方式的cookie提取
