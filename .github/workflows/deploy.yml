@@ -15,11 +15,16 @@ on:
         required: true
         default: '360'
         type: string
+      read_until:
+        description: 'Optional UTC Unix timestamp to stop reading'
+        required: false
+        default: ''
+        type: string
 
 jobs:
   deploy:
     runs-on: ubuntu-22.04
-    timeout-minutes: 240
+    timeout-minutes: 360
     environment: AutoRead  # 指定环境
 
     steps:
@@ -51,10 +56,11 @@ jobs:
         TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
         TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
         SERVERCHAN_SPT:  ${{ secrets.SERVERCHAN_SPT }}
+        READ_UNTIL: ${{ inputs.read_until }}
         READ_NUM: ${{ inputs.read_num || vars.READ_NUM }}  # 使用 Repository Variables
 
       run: |
-        python main.py
+        python run_until.py
 
   keepalive-job:
     name: Keepalive Workflow
