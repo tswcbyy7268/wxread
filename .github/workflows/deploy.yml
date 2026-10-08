@@ -6,14 +6,14 @@ concurrency:
 
 on:
   schedule:
-    # Daily at 00:00 Asia/Shanghai (UTC 16:00 previous day); scheduled runs may be delayed.
-    - cron: '0 16 * * *'
+    # Daily at 03:23 Asia/Shanghai (UTC 19:23 previous day); scheduled runs may be delayed.
+    - cron: '23 19 * * *'
   workflow_dispatch:
     inputs:
       read_num:
-        description: 'Reading requests: 40 = 20 minutes, 480 = 4 hours'
+        description: 'Reading requests: 40 = 20 minutes, 360 = 3 hours'
         required: true
-        default: '480'
+        default: '360'
         type: string
       read_until:
         description: 'Optional UTC Unix timestamp to stop reading'
