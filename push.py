@@ -38,8 +38,13 @@ class PushNotification:
                     self.pushplus_url,
                     data=json.dumps({"token": token, "title": title,"content": content,}).encode("utf-8"),headers=self.headers,timeout=10,)
                 response.raise_for_status()
-                logger.info("PushPlus 响应: %s", response.text)
-                return True
+                payload = response.json()
+                code = payload.get('code')
+                logger.info("PushPlus 响应码: %s", code)
+                if code == 200:
+                    return True
+                logger.error("PushPlus 未接受消息，请检查推送配置。")
+                return False
             except requests.exceptions.RequestException as exc:
                 logger.error("PushPlus 推送失败: %s", exc)
                 if attempt < attempts - 1:

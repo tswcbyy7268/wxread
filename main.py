@@ -7,7 +7,8 @@ import hashlib
 import requests
 import urllib.parse
 import os
-from push import push
+from push import push as send_push
+from recovery import completed, record, TRANSIENT_EXIT, AUTH_EXIT
 from log_utils import setup_logging
 from config import data, headers, cookies, READ_NUM, PUSH_METHOD, book, chapter
 
@@ -22,6 +23,12 @@ REQUEST_TIMEOUT = (10, 30)
 SYNCKEY_REPAIR_LIMIT = 3
 SYNCKEY_REPAIR_DELAY = 5
 AUTH_ERROR_CODES = {-2012, -2013}
+
+
+def push(content, method, is_success=True):
+    # The supervisor sends one final report after recovery or termination.
+    if not os.getenv('WXREAD_SUPERVISED'):
+        return send_push(content, method, is_success=is_success)
 
 
 def encode_data(data):
@@ -91,16 +98,17 @@ def refresh_cookie(strict=True):
     if strict:
         logging.error(ERROR_CODE)
         push(ERROR_CODE, PUSH_METHOD, is_success=False)
-        raise Exception(ERROR_CODE)
+        raise SystemExit(AUTH_EXIT)
 
     logging.warning("启动时未获取到新密钥，保留现有 cookie 继续尝试阅读。")
     return False
 
 # renewal 失败不等于当前阅读会话已失效；启动时刷新失败也继续尝试阅读。
 refresh_cookie(strict=False)
-index = 1
+index = completed() + 1
 lastTime = int(time.time()) - 30
 synckey_repair_attempts = 0
+auth_repair_attempts = 0
 logging.info(f"一共需要阅读 {READ_NUM} 次。")
 
 read_until = float(os.getenv('READ_UNTIL') or 0)
@@ -133,8 +141,11 @@ while index <= READ_NUM:
         ERROR_CODE = f"阅读请求失败：{exc}"
         logging.error(ERROR_CODE)
         push(ERROR_CODE, PUSH_METHOD, is_success=False)
-        raise RuntimeError(ERROR_CODE) from exc
+        raise SystemExit(TRANSIENT_EXIT) from exc
 
+    if response.status_code == 429 or response.status_code >= 500:
+        logging.warning("服务暂时不可用，交给后台延迟续跑，HTTP %s", response.status_code)
+        raise SystemExit(TRANSIENT_EXIT)
     try:
         resData = response.json()
     except ValueError as exc:
@@ -145,10 +156,12 @@ while index <= READ_NUM:
 
     logging.debug("response: %s", resData)
 
-    if 'succ' in resData:
+    if resData.get('succ') == 1:
         if 'synckey' in resData:
             synckey_repair_attempts = 0
+            auth_repair_attempts = 0
             lastTime = thisTime
+            record(index)
             index += 1
             time.sleep(min(30, max(0, read_until - time.time())) if read_until else 30)
             refresh_print(f"阅读进度: 第 {min(index, READ_NUM + 1) - 1}/{READ_NUM} 次，已完成 {(index - 1) * 0.5:.1f} 分钟")
@@ -171,7 +184,7 @@ while index <= READ_NUM:
                 ERROR_CODE = f"synckey 修复请求失败：{exc}"
                 logging.error(ERROR_CODE)
                 push(ERROR_CODE, PUSH_METHOD, is_success=False)
-                raise RuntimeError(ERROR_CODE) from exc
+                raise SystemExit(TRANSIENT_EXIT) from exc
             time.sleep(SYNCKEY_REPAIR_DELAY)
     else:
         err_code = resData.get('errCode')
@@ -184,9 +197,14 @@ while index <= READ_NUM:
         )
 
         if err_code in AUTH_ERROR_CODES:
+            auth_repair_attempts += 1
+            if auth_repair_attempts > 3:
+                logging.error("刷新后仍无法登录，停止自动恢复。")
+                raise SystemExit(AUTH_EXIT)
             logging.warning("检测到登录/鉴权异常，尝试刷新 cookie...")
         else:
-            logging.warning("未识别为已知鉴权错误，保留现有刷新流程尝试恢复...")
+            logging.error("接口返回不可恢复的业务错误，停止运行。")
+            raise SystemExit(1)
         refresh_cookie()
 
 logging.info("阅读脚本已完成。")
