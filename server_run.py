@@ -71,11 +71,15 @@ def run():
             time.sleep(30)
             after = stats.capture()
         added = stats.delta(baseline, after)
+        reason = ('登录状态失效，请重新扫码更新登录请求。' if code == recovery.AUTH_EXIT
+                  else '网络异常连续恢复失败，已停止。' if code == recovery.TRANSIENT_EXIT
+                  else '请检查运行日志。' if code != 0 else '目标请求已完成。')
         snapshot_path.write_text(json.dumps({'before': baseline, 'after': after,
                                             'actual_added_seconds': added,
                                             'confirmed_requests': count,
                                             'reader_exit_code': code}, ensure_ascii=False), encoding='utf-8')
         report(f"服务器《三体》任务{'完成' if code == 0 else '异常结束'}\n"
+               f"{reason}\n"
                f"已确认请求：{count}/{args.requests}\n"
                f"任务前官方累计：{stats.duration(baseline['total_seconds'])}\n"
                f"任务后官方累计：{stats.duration(after['total_seconds'])}\n"
