@@ -5,9 +5,7 @@ concurrency:
   cancel-in-progress: false    # 取消任何正在进行的相同并发组的工作流
 
 on:
-  schedule:
-    # Daily at 03:23 Asia/Shanghai (UTC 19:23 previous day); scheduled runs may be delayed.
-    - cron: '23 19 * * *'
+  # Daily reading migrated to the Ubuntu systemd timer; manual cloud runs remain available.
   workflow_dispatch:
     inputs:
       read_num:

@@ -10,3 +10,12 @@ logs/
 .env
 .env.local
 .env.*.local
+credentials.json
+
+server-deploy-private/
+
+weread-api-key.txt
+
+pushplus-token.txt
+
+read-request.txt
