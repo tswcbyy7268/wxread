@@ -10,6 +10,8 @@ RESTART_DELAYS = (30, 60, 120)
 
 
 def notify(message, success):
+    if os.getenv('WXREAD_REPORT_BY_PARENT') == '1':
+        return True
     from config import PUSH_METHOD
     from push import push
     return push(message, PUSH_METHOD, is_success=success)

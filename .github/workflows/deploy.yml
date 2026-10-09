@@ -20,6 +20,11 @@ on:
         required: false
         default: ''
         type: string
+      verify_stats:
+        description: 'Verify 5 minutes first, then report actual official duration'
+        required: false
+        default: false
+        type: boolean
 
 jobs:
   deploy:
@@ -61,9 +66,15 @@ jobs:
         SERVERCHAN_SPT:  ${{ secrets.SERVERCHAN_SPT }}
         READ_UNTIL: ${{ inputs.read_until }}
         READ_NUM: ${{ inputs.read_num || vars.READ_NUM }}  # 使用 Repository Variables
+        WEREAD_API_KEY: ${{ secrets.WEREAD_API_KEY }}
+        VERIFY_STATS: ${{ inputs.verify_stats }}
 
       run: |
-        python run_until.py
+        if [ "$VERIFY_STATS" = "true" ]; then
+          python verified_run.py
+        else
+          python run_until.py
+        fi
 
   keepalive-job:
     name: Keepalive Workflow
