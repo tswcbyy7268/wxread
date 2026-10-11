@@ -5,7 +5,7 @@ import time
 import requests
 
 URL = 'https://i.weread.qq.com/api/agent/gateway'
-VERSION = '1.0.4'
+VERSION = '1.0.5'
 TZ = datetime.timezone(datetime.timedelta(hours=8))
 
 

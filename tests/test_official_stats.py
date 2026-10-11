@@ -15,6 +15,7 @@ class OfficialStatisticsTests(unittest.TestCase):
         self.assertEqual(result['total_seconds'], 3661)
         self.assertEqual(official_stats.duration(3661), '1小时1分钟1秒')
         self.assertEqual(post.call_args.kwargs['json']['mode'], 'overall')
+        self.assertEqual(post.call_args.kwargs['json']['skill_version'], official_stats.VERSION)
 
     def test_missing_field_is_not_zero(self):
         with patch.dict('os.environ', {'WEREAD_API_KEY': 'test-only'}), patch('requests.post', return_value=self.response({})):
