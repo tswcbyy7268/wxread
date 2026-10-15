@@ -26,6 +26,7 @@ def run():
     os.environ['READ_NUM'] = str(args.requests)
     os.environ['READ_UNTIL'] = ''
     os.environ['WXREAD_SUPERVISED'] = '1'
+    os.environ['WXREAD_SESSION_PATH'] = str(STATE / 'session.json')
     import official_stats as stats
     import recovery
     import run_until

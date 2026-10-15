@@ -106,6 +106,21 @@ class RecoveryTests(unittest.TestCase):
         with patch('requests.post', return_value=response):
             self.assertFalse(module.PushNotification().push_pushplus('test', 'test', True))
 
+    def test_reader_preserves_rotated_login_tokens(self):
+        import json
+        session = Path(self.temp.name) / 'session.json'
+        config = types.SimpleNamespace(data={'s': 'old'}, headers={}, cookies={'wr_vid': 'same-user'}, READ_NUM=1,
+                                       PUSH_METHOD='', book=['three-body'], chapter=['matching-chapter'])
+        def post(url, **kwargs):
+            if 'renewal' in url:
+                return types.SimpleNamespace(cookies={'wr_skey': 'new-key', 'wr_rt': 'renewed-token'})
+            self.assertEqual(kwargs['cookies']['wr_rt'], 'renewed-token')
+            return types.SimpleNamespace(status_code=200, cookies={'wr_rt': 'read-rotated-token'},
+                                         json=lambda: {'succ': 1, 'synckey': 1})
+        with patch.dict(os.environ, {'WXREAD_SESSION_PATH': str(session)}), patch.dict(sys.modules, {'config': config, 'push': types.SimpleNamespace(push=Mock())}), patch('requests.post', side_effect=post), patch('time.sleep'):
+            runpy.run_path(str(ROOT / 'main.py'), run_name='__main__')
+        self.assertEqual(json.loads(session.read_text())['cookies']['wr_rt'], 'read-rotated-token')
+
 
 if __name__ == '__main__':
     unittest.main()

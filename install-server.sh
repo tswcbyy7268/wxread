@@ -18,7 +18,7 @@ if ! id wxread >/dev/null 2>&1; then
 fi
 install -d -o root -g wxread -m 0750 /opt/wxread /etc/wxread
 install -d -o wxread -g wxread -m 0700 /var/lib/wxread /var/lib/wxread/logs
-for source in main.py push.py config.py log_utils.py recovery.py run_until.py official_stats.py server_run.py source-revision.txt; do
+for source in main.py push.py config.py log_utils.py recovery.py run_until.py official_stats.py session_state.py server_run.py import_login.py source-revision.txt; do
   install -o root -g wxread -m 0640 "$source" "/opt/wxread/$source"
 done
 install -o root -g wxread -m 0640 credentials.json /etc/wxread/credentials.json

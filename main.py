@@ -9,6 +9,7 @@ import urllib.parse
 import os
 from push import push as send_push
 from recovery import completed, record, TRANSIENT_EXIT, AUTH_EXIT
+from session_state import restore as restore_session, save as save_session
 from log_utils import setup_logging
 from config import data, headers, cookies, READ_NUM, PUSH_METHOD, book, chapter
 
@@ -63,6 +64,8 @@ def get_wr_skey():
             )
             
             if 'wr_skey' in response.cookies:
+                # Preserve all rotated session cookies, not only the short key.
+                cookies.update(dict(response.cookies))
                 return response.cookies['wr_skey'][:8]
             else:
                 continue
@@ -90,7 +93,8 @@ def refresh_cookie(strict=True):
     new_skey = get_wr_skey()
     if new_skey:
         cookies['wr_skey'] = new_skey
-        logging.info(f"密钥刷新成功，新密钥：{new_skey[:2]}***")
+        save_session(cookies)
+        logging.info('登录信息刷新成功，已保存续期状态。')
         logging.info("重新本次阅读。")
         return True
 
@@ -104,6 +108,7 @@ def refresh_cookie(strict=True):
     return False
 
 # renewal 失败不等于当前阅读会话已失效；启动时刷新失败也继续尝试阅读。
+restore_session(cookies)
 refresh_cookie(strict=False)
 index = completed() + 1
 lastTime = int(time.time()) - 30
@@ -162,6 +167,10 @@ while index <= READ_NUM:
             auth_repair_attempts = 0
             lastTime = thisTime
             record(index)
+            rotated = getattr(response, 'cookies', {})
+            if rotated:
+                cookies.update(dict(rotated))
+                save_session(cookies)
             index += 1
             time.sleep(min(30, max(0, read_until - time.time())) if read_until else 30)
             refresh_print(f"阅读进度: 第 {min(index, READ_NUM + 1) - 1}/{READ_NUM} 次，已完成 {(index - 1) * 0.5:.1f} 分钟")
